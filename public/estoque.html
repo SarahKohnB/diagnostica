@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>Estoque</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<div class="container-produtos">
+
+<h1>Gestão de Estoque</h1>
+
+<select id="produto">
+
+</select>
+
+<select id="tipo">
+
+<option value="entrada">
+Entrada
+</option>
+
+<option value="saida">
+Saída
+</option>
+
+</select>
+
+<input
+type="number"
+id="quantidade"
+placeholder="Quantidade"
+>
+
+<button onclick="movimentar()">
+
+Movimentar
+
+</button>
+
+<p id="alerta"></p>
+
+<br>
+
+<h2>Histórico</h2>
+
+<table border="1">
+
+<thead>
+
+<tr>
+
+<th>Produto</th>
+<th>Tipo</th>
+<th>Quantidade</th>
+<th>Data</th>
+<th>Usuário</th>
+
+</tr>
+
+</thead>
+
+<tbody id="historico">
+
+</tbody>
+
+</table>
+
+<br>
+
+<button
+onclick="
+window.location.href='menu.html'
+">
+
+Voltar
+
+</button>
+
+</div>
+
+<script>
+
+async function carregarProdutos(){
+
+    const resposta =
+    await fetch("/api/produtos");
+
+    const produtos =
+    await resposta.json();
+
+    let html = "";
+
+    produtos.forEach(produto=>{
+
+        html += `
+        <option value="${produto.id}">
+            ${produto.nome}
+        </option>
+        `;
+
+    });
+
+    document
+    .getElementById("produto")
+    .innerHTML = html;
+
+}
+
+async function carregarHistorico(){
+
+    const resposta =
+    await fetch("/api/movimentacoes");
+
+    const dados =
+    await resposta.json();
+
+    let html = "";
+
+    dados.forEach(item=>{
+
+        html += `
+        <tr>
+
+            <td>${item.produto}</td>
+            <td>${item.tipo}</td>
+            <td>${item.quantidade}</td>
+            <td>${item.data_movimentacao}</td>
+            <td>${item.usuario}</td>
+
+        </tr>
+        `;
+
+    });
+
+    document
+    .getElementById("historico")
+    .innerHTML = html;
+
+}
+
+async function movimentar(){
+
+    const usuario =
+    JSON.parse(
+        localStorage.getItem("usuario")
+    );
+
+    const resposta =
+    await fetch("/api/movimentar",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":
+            "application/json"
+        },
+
+        body:JSON.stringify({
+
+            produto_id:
+            document
+            .getElementById("produto")
+            .value,
+
+            tipo:
+            document
+            .getElementById("tipo")
+            .value,
+
+            quantidade:
+            document
+            .getElementById("quantidade")
+            .value,
+
+            usuario:
+            usuario.nome
+
+        })
+
+    });
+
+    const dados =
+    await resposta.json();
+
+    if(dados.alerta){
+
+        document
+        .getElementById("alerta")
+        .innerText =
+        dados.alerta;
+
+    }
+
+    carregarHistorico();
+
+}
+
+carregarProdutos();
+carregarHistorico();
+
+</script>
+<script src="auth.js"></script>
+</body>
+
+</html>

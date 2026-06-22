@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Produtos</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+        <h2>MetalTech</h2>
+
+        <button onclick="window.location.href='menu.html'">
+            Dashboard
+        </button>
+
+        <button onclick="window.location.href='produtos.html'">
+            Produtos
+        </button>
+
+        <button onclick="window.location.href='estoque.html'">
+            Estoque
+        </button>
+
+        <button onclick="logout()">
+            Sair
+        </button>
+
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div class="content">
+
+        <h1>Produtos</h1>
+
+        <input id="busca" placeholder="Buscar produto" onkeyup="carregarProdutos()">
+
+        <input id="nome" placeholder="Nome">
+
+        <input id="categoria" placeholder="Categoria">
+
+        <input id="quantidade" type="number" placeholder="Quantidade">
+
+        <input id="estoque" type="number" placeholder="Estoque mínimo">
+
+        <button onclick="cadastrarProduto()">
+            Cadastrar
+        </button>
+
+        <br><br>
+
+        <table border="1">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Mínimo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabelaProdutos"></tbody>
+
+        </table>
+
+        <br>
+
+        <button onclick="window.location.href='menu.html'">
+            Voltar
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+function logout(){
+    localStorage.removeItem("usuario");
+    window.location.href = "login.html";
+}
+
+async function carregarProdutos(){
+
+    const busca =
+    document.getElementById("busca").value;
+
+    const resposta =
+    await fetch(`/api/produtos?busca=${busca}`);
+
+    const produtos =
+    await resposta.json();
+
+    let html = "";
+
+    produtos.forEach(produto => {
+
+        html += `
+        <tr>
+
+            <td>${produto.id}</td>
+            <td>${produto.nome}</td>
+            <td>${produto.categoria}</td>
+
+            <td>
+                ${
+                    produto.quantidade < produto.estoque_minimo
+                    ? "⚠️ " + produto.quantidade
+                    : produto.quantidade
+                }
+            </td>
+
+            <td>${produto.estoque_minimo}</td>
+
+            <td>
+
+                <button onclick="editarProduto(
+                    ${produto.id},
+                    '${produto.nome}',
+                    '${produto.categoria}',
+                    ${produto.quantidade},
+                    ${produto.estoque_minimo}
+                )">
+                    Editar
+                </button>
+
+                <button onclick="excluirProduto(${produto.id})">
+                    Excluir
+                </button>
+
+            </td>
+
+        </tr>
+        `;
+    });
+
+    document.getElementById("tabelaProdutos").innerHTML = html;
+}
+
+async function cadastrarProduto(){
+
+    const nome = document.getElementById("nome").value;
+    const categoria = document.getElementById("categoria").value;
+    const quantidade = Number(document.getElementById("quantidade").value);
+    const estoque_minimo = Number(document.getElementById("estoque").value);
+
+    if(!nome.trim()){
+        alert("Informe o nome do produto");
+        return;
+    }
+
+    if(quantidade < 0){
+        alert("Quantidade inválida");
+        return;
+    }
+
+    if(estoque_minimo < 0){
+        alert("Estoque mínimo inválido");
+        return;
+    }
+
+    await fetch("/api/produtos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            nome,
+            categoria,
+            quantidade,
+            estoque_minimo
+        })
+    });
+
+    document.getElementById("nome").value = "";
+    document.getElementById("categoria").value = "";
+    document.getElementById("quantidade").value = "";
+    document.getElementById("estoque").value = "";
+
+    carregarProdutos();
+}
+
+async function excluirProduto(id){
+
+    const confirmar = confirm("Deseja realmente excluir este produto?");
+
+    if(!confirmar) return;
+
+    await fetch(`/api/produtos/${id}`, {
+        method: "DELETE"
+    });
+
+    carregarProdutos();
+}
+
+async function editarProduto(
+    id,
+    nomeAtual,
+    categoriaAtual,
+    quantidadeAtual,
+    estoqueAtual
+){
+
+    const nome = prompt("Nome:", nomeAtual);
+    const categoria = prompt("Categoria:", categoriaAtual);
+    const quantidade = prompt("Quantidade:", quantidadeAtual);
+    const estoque_minimo = prompt("Estoque mínimo:", estoqueAtual);
+
+    await fetch(`/api/produtos/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            nome,
+            categoria,
+            quantidade,
+            estoque_minimo
+        })
+    });
+
+    carregarProdutos();
+}
+
+carregarProdutos();
+
+</script>
+
+<script src="auth.js"></script>
+
+</body>
+</html>
